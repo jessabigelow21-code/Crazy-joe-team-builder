@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CAN Canyon Clash Team Builder</title>
+<style>
+:root{--bg:#0a0b0e;--panel:#15181d;--panel2:#20242b;--line:#393e49;--text:#f6f7f8;--muted:#b6bac5;--green:#82e6ae;--amber:#ffd27b;--blue:#9ccaff;--purple:#e4b4ff}
+*{box-sizing:border-box} body{margin:0;background:#0a0b0e;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select{font:inherit} .app{max-width:980px;margin:auto;padding:14px 12px 100px}
+h1{font-size:22px;margin:0 0 4px} .sub,.note{color:var(--muted);font-size:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:13px;margin-top:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px} label{font-size:12px;color:var(--muted)}
+select,input{width:100%;margin-top:5px;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px} .stat{background:var(--panel2);border:1px solid var(--line);padding:9px;border-radius:11px;text-align:center} .stat b{display:block;font-size:19px}
+.toolbar{display:flex;gap:8px;margin-bottom:9px} .toolbar input{margin:0} .btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:10px 12px;border-radius:11px;font-weight:800} .primary{background:#b9893b;color:#15110a}
+.roster{display:grid;gap:7px;max-height:60vh;overflow:auto} .row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;background:var(--panel2);border:1px solid var(--line);padding:8px;border-radius:11px}
+.name{font-weight:750;overflow-wrap:anywhere} .pill{border:0;border-radius:999px;padding:8px 9px;min-width:64px;font-weight:900}
+.out{background:#3d4048;color:#ddd} .deployed{background:#173f2b;color:var(--green)} .substatus{background:#523d16;color:var(--amber)} .legion1{background:#193a58;color:var(--blue)} .legion2{background:#4d2953;color:var(--purple)} .disabled{opacity:.35}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px} .hidden{display:none!important}
+.teamgrid{display:grid;gap:10px;margin-top:12px} .team{background:var(--panel);border:1px solid var(--line);border-radius:15px;overflow:hidden} .teamhead{padding:11px 12px;background:#211d15;border-bottom:1px solid #5e4a27;font-weight:900} .member{display:flex;justify-content:space-between;gap:8px;padding:9px 12px;border-bottom:1px solid #2c313a} .role{font-size:12px;color:#ffe0a0;font-weight:900} .subbox{padding:9px 12px;color:#ffe0a0}
+@media(min-width:720px){.roster{grid-template-columns:1fr 1fr}.teamgrid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>CAN Canyon Clash Team Builder</h1>
+<div class="sub">Foundry-style workflow • Canyon team rules</div>
+
+<section id="selectView">
+<div class="card">
+  <div class="grid">
+    <label>Legion
+      <select id="activeLegion" onchange="changeLegion()"><option value="1">Legion 1</option><option value="2">Legion 2</option></select>
+    </label>
+    <label>Base team size<input value="5 players + overflow" disabled></label>
+  </div>
+  <div class="stats">
+    <div class="stat"><b id="deployedCount">0</b>Deployed</div>
+    <div class="stat"><b id="subCount">0</b>Subs</div>
+    <div class="stat"><b id="outCount">0</b>Out</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="toolbar">
+    <input id="search" placeholder="Search player…" oninput="filterRows()">
+    <button class="btn" id="usualBtn" onclick="toggleUsual()">Show usual legion only</button>
+  </div>
+  <div class="note">Tap OUT → DEPLOYED → SUB. Tap L1/L2 to temporarily move a player for this event.</div>
+  <div id="rosterList" class="roster">
+<div class="row player-row" id="player-1" data-name="AngryMarshmallow" data-rank="1" data-usual="1">
+  <div class="name">AngryMarshmallow<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-1" onclick="toggleLegion(1)">L1</button>
+  <button type="button" class="pill out" id="status-1" onclick="toggleStatus(1)">OUT</button>
+</div>
+<div class="row player-row" id="player-2" data-name="I am Kit" data-rank="2" data-usual="1">
+  <div class="name">I am Kit<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-2" onclick="toggleLegion(2)">L1</button>
+  <button type="button" class="pill out" id="status-2" onclick="toggleStatus(2)">OUT</button>
+</div>
+<div class="row player-row" id="player-3" data-name="Stefan" data-rank="3" data-usual="1">
+  <div class="name">Stefan<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-3" onclick="toggleLegion(3)">L1</button>
+  <button type="button" class="pill out" id="status-3" onclick="toggleStatus(3)">OUT</button>
+</div>
+<div class="row player-row" id="player-4" data-name="Lucky Meow" data-rank="4" data-usual="1">
+  <div class="name">Lucky Meow<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-4" onclick="toggleLegion(4)">L1</button>
+  <button type="button" class="pill out" id="status-4" onclick="toggleStatus(4)">OUT</button>
+</div>
+<div class="row player-row" id="player-5" data-name="Bun" data-rank="5" data-usual="2">
+  <div class="name">Bun<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-5" onclick="toggleLegion(5)">L2</button>
+  <button type="button" class="pill out" id="status-5" onclick="toggleStatus(5)">OUT</button>
+</div>
+<div class="row player-row" id="player-6" data-name="Space_balls" data-rank="6" data-usual="2">
+  <div class="name">Space_balls<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-6" onclick="toggleLegion(6)">L2</button>
+  <button type="button" class="pill out" id="status-6" onclick="toggleStatus(6)">OUT</button>
+</div>
+<div class="row player-row" id="player-7" data-name="Jbsnow" data-rank="7" data-usual="2">
+  <div class="name">Jbsnow<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-7" onclick="toggleLegion(7)">L2</button>
+  <button type="button" class="pill out" id="status-7" onclick="toggleStatus(7)">OUT</button>
+</div>
+<div class="row player-row" id="player-8" data-name="Rellik" data-rank="8" data-usual="1">
+  <div class="name">Rellik<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-8" onclick="toggleLegion(8)">L1</button>
+  <button type="button" class="pill out" id="status-8" onclick="toggleStatus(8)">OUT</button>
+</div>
+<div class="row player-row" id="player-9" data-name="Hedder" data-rank="9" data-usual="2">
+  <div class="name">Hedder<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-9" onclick="toggleLegion(9)">L2</button>
+  <button type="button" class="pill out" id="status-9" onclick="toggleStatus(9)">OUT</button>
+</div>
+<div class="row player-row" id="player-10" data-name="BuRyAbAy" data-rank="10" data-usual="1">
+  <div class="name">BuRyAbAy<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-10" onclick="toggleLegion(10)">L1</button>
+  <button type="button" class="pill out" id="status-10" onclick="toggleStatus(10)">OUT</button>
+</div>
+<div class="row player-row" id="player-11" data-name="Ntina" data-rank="11" data-usual="2">
+  <div class="name">Ntina<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-11" onclick="toggleLegion(11)">L2</button>
+  <button type="button" class="pill out" id="status-11" onclick="toggleStatus(11)">OUT</button>
+</div>
+<div class="row player-row" id="player-12" data-name="༺༽l3@ck༼༻" data-rank="12" data-usual="1">
+  <div class="name">༺༽l3@ck༼༻<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-12" onclick="toggleLegion(12)">L1</button>
+  <button type="button" class="pill out" id="status-12" onclick="toggleStatus(12)">OUT</button>
+</div>
+<div class="row player-row" id="player-13" data-name="Weak BRS" data-rank="13" data-usual="1">
+  <div class="name">Weak BRS<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-13" onclick="toggleLegion(13)">L1</button>
+  <button type="button" class="pill out" id="status-13" onclick="toggleStatus(13)">OUT</button>
+</div>
+<div class="row player-row" id="player-14" data-name="Brother Yatty" data-rank="14" data-usual="2">
+  <div class="name">Brother Yatty<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-14" onclick="toggleLegion(14)">L2</button>
+  <button type="button" class="pill out" id="status-14" onclick="toggleStatus(14)">OUT</button>
+</div>
+<div class="row player-row" id="player-15" data-name="Summer" data-rank="15" data-usual="1">
+  <div class="name">Summer<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-15" onclick="toggleLegion(15)">L1</button>
+  <button type="button" class="pill out" id="status-15" onclick="toggleStatus(15)">OUT</button>
+</div>
+<div class="row player-row" id="player-16" data-name="Choppy" data-rank="16" data-usual="1">
+  <div class="name">Choppy<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-16" onclick="toggleLegion(16)">L1</button>
+  <button type="button" class="pill out" id="status-16" onclick="toggleStatus(16)">OUT</button>
+</div>
+<div class="row player-row" id="player-17" data-name="Dr.cutyMomo" data-rank="17" data-usual="2">
+  <div class="name">Dr.cutyMomo<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-17" onclick="toggleLegion(17)">L2</button>
+  <button type="button" class="pill out" id="status-17" onclick="toggleStatus(17)">OUT</button>
+</div>
+<div class="row player-row" id="player-18" data-name="Tara" data-rank="18" data-usual="2">
+  <div class="name">Tara<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-18" onclick="toggleLegion(18)">L2</button>
+  <button type="button" class="pill out" id="status-18" onclick="toggleStatus(18)">OUT</button>
+</div>
+<div class="row player-row" id="player-19" data-name="Eurokeith" data-rank="19" data-usual="1">
+  <div class="name">Eurokeith<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-19" onclick="toggleLegion(19)">L1</button>
+  <button type="button" class="pill out" id="status-19" onclick="toggleStatus(19)">OUT</button>
+</div>
+<div class="row player-row" id="player-20" data-name="Uranos" data-rank="20" data-usual="1">
+  <div class="name">Uranos<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-20" onclick="toggleLegion(20)">L1</button>
+  <button type="button" class="pill out" id="status-20" onclick="toggleStatus(20)">OUT</button>
+</div>
+<div class="row player-row" id="player-21" data-name="Yaya_Bings" data-rank="21" data-usual="2">
+  <div class="name">Yaya_Bings<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-21" onclick="toggleLegion(21)">L2</button>
+  <button type="button" class="pill out" id="status-21" onclick="toggleStatus(21)">OUT</button>
+</div>
+<div class="row player-row" id="player-22" data-name="Kals Avarys" data-rank="22" data-usual="2">
+  <div class="name">Kals Avarys<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-22" onclick="toggleLegion(22)">L2</button>
+  <button type="button" class="pill out" id="status-22" onclick="toggleStatus(22)">OUT</button>
+</div>
+<div class="row player-row" id="player-23" data-name="Seal" data-rank="23" data-usual="2">
+  <div class="name">Seal<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-23" onclick="toggleLegion(23)">L2</button>
+  <button type="button" class="pill out" id="status-23" onclick="toggleStatus(23)">OUT</button>
+</div>
+<div class="row player-row" id="player-24" data-name="Soraa" data-rank="24" data-usual="1">
+  <div class="name">Soraa<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-24" onclick="toggleLegion(24)">L1</button>
+  <button type="button" class="pill out" id="status-24" onclick="toggleStatus(24)">OUT</button>
+</div>
+<div class="row player-row" id="player-25" data-name="Rosie" data-rank="25" data-usual="2">
+  <div class="name">Rosie<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-25" onclick="toggleLegion(25)">L2</button>
+  <button type="button" class="pill out" id="status-25" onclick="toggleStatus(25)">OUT</button>
+</div>
+<div class="row player-row" id="player-26" data-name="Fu2fa2" data-rank="26" data-usual="1">
+  <div class="name">Fu2fa2<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-26" onclick="toggleLegion(26)">L1</button>
+  <button type="button" class="pill out" id="status-26" onclick="toggleStatus(26)">OUT</button>
+</div>
+<div class="row player-row" id="player-27" data-name="Kidbull" data-rank="27" data-usual="1">
+  <div class="name">Kidbull<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-27" onclick="toggleLegion(27)">L1</button>
+  <button type="button" class="pill out" id="status-27" onclick="toggleStatus(27)">OUT</button>
+</div>
+<div class="row player-row" id="player-28" data-name="Lord McLord" data-rank="28" data-usual="2">
+  <div class="name">Lord McLord<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-28" onclick="toggleLegion(28)">L2</button>
+  <button type="button" class="pill out" id="status-28" onclick="toggleStatus(28)">OUT</button>
+</div>
+<div class="row player-row" id="player-29" data-name="Kirov Airship (rooster)" data-rank="29" data-usual="2">
+  <div class="name">Kirov Airship (rooster)<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-29" onclick="toggleLegion(29)">L2</button>
+  <button type="button" class="pill out" id="status-29" onclick="toggleStatus(29)">OUT</button>
+</div>
+<div class="row player-row" id="player-30" data-name="Jina" data-rank="30" data-usual="1">
+  <div class="name">Jina<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-30" onclick="toggleLegion(30)">L1</button>
+  <button type="button" class="pill out" id="status-30" onclick="toggleStatus(30)">OUT</button>
+</div>
+<div class="row player-row" id="player-31" data-name="Filip1031" data-rank="31" data-usual="1">
+  <div class="name">Filip1031<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-31" onclick="toggleLegion(31)">L1</button>
+  <button type="button" class="pill out" id="status-31" onclick="toggleStatus(31)">OUT</button>
+</div>
+<div class="row player-row" id="player-32" data-name="ReyGattuso" data-rank="32" data-usual="2">
+  <div class="name">ReyGattuso<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-32" onclick="toggleLegion(32)">L2</button>
+  <button type="button" class="pill out" id="status-32" onclick="toggleStatus(32)">OUT</button>
+</div>
+<div class="row player-row" id="player-33" data-name="SpikeCujo" data-rank="33" data-usual="2">
+  <div class="name">SpikeCujo<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-33" onclick="toggleLegion(33)">L2</button>
+  <button type="button" class="pill out" id="status-33" onclick="toggleStatus(33)">OUT</button>
+</div>
+<div class="row player-row" id="player-34" data-name="NicolePharmD" data-rank="34" data-usual="2">
+  <div class="name">NicolePharmD<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-34" onclick="toggleLegion(34)">L2</button>
+  <button type="button" class="pill out" id="status-34" onclick="toggleStatus(34)">OUT</button>
+</div>
+<div class="row player-row" id="player-35" data-name="Seren (edoardo Galan)" data-rank="35" data-usual="2">
+  <div class="name">Seren (edoardo Galan)<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-35" onclick="toggleLegion(35)">L2</button>
+  <button type="button" class="pill out" id="status-35" onclick="toggleStatus(35)">OUT</button>
+</div>
+<div class="row player-row" id="player-36" data-name="Cat" data-rank="36" data-usual="2">
+  <div class="name">Cat<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-36" onclick="toggleLegion(36)">L2</button>
+  <button type="button" class="pill out" id="status-36" onclick="toggleStatus(36)">OUT</button>
+</div>
+<div class="row player-row" id="player-37" data-name="伦恩少侠911" data-rank="37" data-usual="1">
+  <div class="name">伦恩少侠911<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-37" onclick="toggleLegion(37)">L1</button>
+  <button type="button" class="pill out" id="status-37" onclick="toggleStatus(37)">OUT</button>
+</div>
+<div class="row player-row" id="player-38" data-name="Floopy" data-rank="38" data-usual="1">
+  <div class="name">Floopy<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-38" onclick="toggleLegion(38)">L1</button>
+  <button type="button" class="pill out" id="status-38" onclick="toggleStatus(38)">OUT</button>
+</div>
+<div class="row player-row" id="player-39" data-name="U roll my balls" data-rank="39" data-usual="2">
+  <div class="name">U roll my balls<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-39" onclick="toggleLegion(39)">L2</button>
+  <button type="button" class="pill out" id="status-39" onclick="toggleStatus(39)">OUT</button>
+</div>
+<div class="row player-row" id="player-40" data-name="Lord Vegnagun" data-rank="40" data-usual="2">
+  <div class="name">Lord Vegnagun<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-40" onclick="toggleLegion(40)">L2</button>
+  <button type="button" class="pill out" id="status-40" onclick="toggleStatus(40)">OUT</button>
+</div>
+<div class="row player-row" id="player-41" data-name="# solo #" data-rank="41" data-usual="2">
+  <div class="name"># solo #<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-41" onclick="toggleLegion(41)">L2</button>
+  <button type="button" class="pill out" id="status-41" onclick="toggleStatus(41)">OUT</button>
+</div>
+<div class="row player-row" id="player-42" data-name="SKY" data-rank="42" data-usual="2">
+  <div class="name">SKY<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-42" onclick="toggleLegion(42)">L2</button>
+  <button type="button" class="pill out" id="status-42" onclick="toggleStatus(42)">OUT</button>
+</div>
+<div class="row player-row" id="player-43" data-name="Tdvt25" data-rank="43" data-usual="2">
+  <div class="name">Tdvt25<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-43" onclick="toggleLegion(43)">L2</button>
+  <button type="button" class="pill out" id="status-43" onclick="toggleStatus(43)">OUT</button>
+</div>
+<div class="row player-row" id="player-44" data-name="Youshe" data-rank="44" data-usual="2">
+  <div class="name">Youshe<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-44" onclick="toggleLegion(44)">L2</button>
+  <button type="button" class="pill out" id="status-44" onclick="toggleStatus(44)">OUT</button>
+</div>
+<div class="row player-row" id="player-45" data-name="Lexie (Bearded Dragon)" data-rank="45" data-usual="1">
+  <div class="name">Lexie (Bearded Dragon)<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-45" onclick="toggleLegion(45)">L1</button>
+  <button type="button" class="pill out" id="status-45" onclick="toggleStatus(45)">OUT</button>
+</div>
+<div class="row player-row" id="player-46" data-name="Ranji" data-rank="46" data-usual="2">
+  <div class="name">Ranji<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-46" onclick="toggleLegion(46)">L2</button>
+  <button type="button" class="pill out" id="status-46" onclick="toggleStatus(46)">OUT</button>
+</div>
+<div class="row player-row" id="player-47" data-name="Ibra" data-rank="47" data-usual="1">
+  <div class="name">Ibra<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-47" onclick="toggleLegion(47)">L1</button>
+  <button type="button" class="pill out" id="status-47" onclick="toggleStatus(47)">OUT</button>
+</div>
+<div class="row player-row" id="player-48" data-name="Ratchin" data-rank="48" data-usual="1">
+  <div class="name">Ratchin<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-48" onclick="toggleLegion(48)">L1</button>
+  <button type="button" class="pill out" id="status-48" onclick="toggleStatus(48)">OUT</button>
+</div>
+<div class="row player-row" id="player-49" data-name="Kuman" data-rank="49" data-usual="1">
+  <div class="name">Kuman<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-49" onclick="toggleLegion(49)">L1</button>
+  <button type="button" class="pill out" id="status-49" onclick="toggleStatus(49)">OUT</button>
+</div>
+<div class="row player-row" id="player-50" data-name="累累~累累~" data-rank="50" data-usual="1">
+  <div class="name">累累~累累~<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-50" onclick="toggleLegion(50)">L1</button>
+  <button type="button" class="pill out" id="status-50" onclick="toggleStatus(50)">OUT</button>
+</div>
+<div class="row player-row" id="player-51" data-name="Doom Balls" data-rank="51" data-usual="2">
+  <div class="name">Doom Balls<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-51" onclick="toggleLegion(51)">L2</button>
+  <button type="button" class="pill out" id="status-51" onclick="toggleStatus(51)">OUT</button>
+</div>
+<div class="row player-row" id="player-52" data-name="AZOZKA" data-rank="52" data-usual="2">
+  <div class="name">AZOZKA<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-52" onclick="toggleLegion(52)">L2</button>
+  <button type="button" class="pill out" id="status-52" onclick="toggleStatus(52)">OUT</button>
+</div>
+<div class="row player-row" id="player-53" data-name="Psycho" data-rank="53" data-usual="1">
+  <div class="name">Psycho<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-53" onclick="toggleLegion(53)">L1</button>
+  <button type="button" class="pill out" id="status-53" onclick="toggleStatus(53)">OUT</button>
+</div>
+<div class="row player-row" id="player-54" data-name="Timmu" data-rank="54" data-usual="2">
+  <div class="name">Timmu<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-54" onclick="toggleLegion(54)">L2</button>
+  <button type="button" class="pill out" id="status-54" onclick="toggleStatus(54)">OUT</button>
+</div>
+<div class="row player-row" id="player-55" data-name="Skadi B" data-rank="55" data-usual="2">
+  <div class="name">Skadi B<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-55" onclick="toggleLegion(55)">L2</button>
+  <button type="button" class="pill out" id="status-55" onclick="toggleStatus(55)">OUT</button>
+</div>
+<div class="row player-row" id="player-56" data-name="Harmony" data-rank="56" data-usual="1">
+  <div class="name">Harmony<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-56" onclick="toggleLegion(56)">L1</button>
+  <button type="button" class="pill out" id="status-56" onclick="toggleStatus(56)">OUT</button>
+</div>
+<div class="row player-row" id="player-57" data-name="Atiba" data-rank="57" data-usual="2">
+  <div class="name">Atiba<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-57" onclick="toggleLegion(57)">L2</button>
+  <button type="button" class="pill out" id="status-57" onclick="toggleStatus(57)">OUT</button>
+</div>
+<div class="row player-row" id="player-58" data-name="Shoushana" data-rank="58" data-usual="1">
+  <div class="name">Shoushana<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-58" onclick="toggleLegion(58)">L1</button>
+  <button type="button" class="pill out" id="status-58" onclick="toggleStatus(58)">OUT</button>
+</div>
+<div class="row player-row" id="player-59" data-name="Meli" data-rank="59" data-usual="1">
+  <div class="name">Meli<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-59" onclick="toggleLegion(59)">L1</button>
+  <button type="button" class="pill out" id="status-59" onclick="toggleStatus(59)">OUT</button>
+</div>
+<div class="row player-row" id="player-60" data-name="Biiiiiiiiing~O" data-rank="60" data-usual="2">
+  <div class="name">Biiiiiiiiing~O<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-60" onclick="toggleLegion(60)">L2</button>
+  <button type="button" class="pill out" id="status-60" onclick="toggleStatus(60)">OUT</button>
+</div>
+<div class="row player-row" id="player-61" data-name="Nebulese" data-rank="61" data-usual="1">
+  <div class="name">Nebulese<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-61" onclick="toggleLegion(61)">L1</button>
+  <button type="button" class="pill out" id="status-61" onclick="toggleStatus(61)">OUT</button>
+</div>
+<div class="row player-row" id="player-62" data-name="Vulture" data-rank="62" data-usual="2">
+  <div class="name">Vulture<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-62" onclick="toggleLegion(62)">L2</button>
+  <button type="button" class="pill out" id="status-62" onclick="toggleStatus(62)">OUT</button>
+</div>
+<div class="row player-row" id="player-63" data-name="SteelCityInsider" data-rank="63" data-usual="2">
+  <div class="name">SteelCityInsider<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-63" onclick="toggleLegion(63)">L2</button>
+  <button type="button" class="pill out" id="status-63" onclick="toggleStatus(63)">OUT</button>
+</div>
+<div class="row player-row" id="player-64" data-name="Euphoria" data-rank="64" data-usual="1">
+  <div class="name">Euphoria<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-64" onclick="toggleLegion(64)">L1</button>
+  <button type="button" class="pill out" id="status-64" onclick="toggleStatus(64)">OUT</button>
+</div>
+<div class="row player-row" id="player-65" data-name="Durzu" data-rank="65" data-usual="2">
+  <div class="name">Durzu<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-65" onclick="toggleLegion(65)">L2</button>
+  <button type="button" class="pill out" id="status-65" onclick="toggleStatus(65)">OUT</button>
+</div>
+<div class="row player-row" id="player-66" data-name="VKdViKing" data-rank="66" data-usual="2">
+  <div class="name">VKdViKing<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-66" onclick="toggleLegion(66)">L2</button>
+  <button type="button" class="pill out" id="status-66" onclick="toggleStatus(66)">OUT</button>
+</div>
+<div class="row player-row" id="player-67" data-name="Bani Adam" data-rank="67" data-usual="1">
+  <div class="name">Bani Adam<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-67" onclick="toggleLegion(67)">L1</button>
+  <button type="button" class="pill out" id="status-67" onclick="toggleStatus(67)">OUT</button>
+</div>
+<div class="row player-row" id="player-68" data-name="Wildkid" data-rank="68" data-usual="1">
+  <div class="name">Wildkid<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-68" onclick="toggleLegion(68)">L1</button>
+  <button type="button" class="pill out" id="status-68" onclick="toggleStatus(68)">OUT</button>
+</div>
+<div class="row player-row" id="player-69" data-name="Vrekmontt" data-rank="69" data-usual="2">
+  <div class="name">Vrekmontt<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-69" onclick="toggleLegion(69)">L2</button>
+  <button type="button" class="pill out" id="status-69" onclick="toggleStatus(69)">OUT</button>
+</div>
+<div class="row player-row" id="player-70" data-name="Melonlord" data-rank="70" data-usual="2">
+  <div class="name">Melonlord<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-70" onclick="toggleLegion(70)">L2</button>
+  <button type="button" class="pill out" id="status-70" onclick="toggleStatus(70)">OUT</button>
+</div>
+<div class="row player-row" id="player-71" data-name="Punni" data-rank="71" data-usual="1">
+  <div class="name">Punni<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-71" onclick="toggleLegion(71)">L1</button>
+  <button type="button" class="pill out" id="status-71" onclick="toggleStatus(71)">OUT</button>
+</div>
+<div class="row player-row" id="player-72" data-name="Gritsayenko" data-rank="72" data-usual="1">
+  <div class="name">Gritsayenko<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-72" onclick="toggleLegion(72)">L1</button>
+  <button type="button" class="pill out" id="status-72" onclick="toggleStatus(72)">OUT</button>
+</div>
+<div class="row player-row" id="player-73" data-name="Kayzersoze77" data-rank="73" data-usual="2">
+  <div class="name">Kayzersoze77<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-73" onclick="toggleLegion(73)">L2</button>
+  <button type="button" class="pill out" id="status-73" onclick="toggleStatus(73)">OUT</button>
+</div>
+<div class="row player-row" id="player-74" data-name="Mana" data-rank="74" data-usual="1">
+  <div class="name">Mana<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-74" onclick="toggleLegion(74)">L1</button>
+  <button type="button" class="pill out" id="status-74" onclick="toggleStatus(74)">OUT</button>
+</div>
+<div class="row player-row" id="player-75" data-name="Crazy Slime" data-rank="75" data-usual="1">
+  <div class="name">Crazy Slime<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-75" onclick="toggleLegion(75)">L1</button>
+  <button type="button" class="pill out" id="status-75" onclick="toggleStatus(75)">OUT</button>
+</div>
+<div class="row player-row" id="player-76" data-name="Sukuna" data-rank="76" data-usual="1">
+  <div class="name">Sukuna<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-76" onclick="toggleLegion(76)">L1</button>
+  <button type="button" class="pill out" id="status-76" onclick="toggleStatus(76)">OUT</button>
+</div>
+<div class="row player-row" id="player-77" data-name="Shoretallsong" data-rank="77" data-usual="2">
+  <div class="name">Shoretallsong<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-77" onclick="toggleLegion(77)">L2</button>
+  <button type="button" class="pill out" id="status-77" onclick="toggleStatus(77)">OUT</button>
+</div>
+<div class="row player-row" id="player-78" data-name="RANGERS" data-rank="78" data-usual="1">
+  <div class="name">RANGERS<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-78" onclick="toggleLegion(78)">L1</button>
+  <button type="button" class="pill out" id="status-78" onclick="toggleStatus(78)">OUT</button>
+</div>
+<div class="row player-row" id="player-79" data-name="عيسى" data-rank="79" data-usual="1">
+  <div class="name">عيسى<div class="note">usual L1</div></div>
+  <button type="button" class="pill legion1" id="legion-79" onclick="toggleLegion(79)">L1</button>
+  <button type="button" class="pill out" id="status-79" onclick="toggleStatus(79)">OUT</button>
+</div>
+<div class="row player-row" id="player-80" data-name="Noura" data-rank="80" data-usual="2">
+  <div class="name">Noura<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-80" onclick="toggleLegion(80)">L2</button>
+  <button type="button" class="pill out" id="status-80" onclick="toggleStatus(80)">OUT</button>
+</div>
+<div class="row player-row" id="player-81" data-name="FatCHUCK" data-rank="81" data-usual="2">
+  <div class="name">FatCHUCK<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-81" onclick="toggleLegion(81)">L2</button>
+  <button type="button" class="pill out" id="status-81" onclick="toggleStatus(81)">OUT</button>
+</div>
+<div class="row player-row" id="player-82" data-name="DonMeloooon" data-rank="82" data-usual="2">
+  <div class="name">DonMeloooon<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-82" onclick="toggleLegion(82)">L2</button>
+  <button type="button" class="pill out" id="status-82" onclick="toggleStatus(82)">OUT</button>
+</div>
+<div class="row player-row" id="player-83" data-name="Doomsday" data-rank="83" data-usual="2">
+  <div class="name">Doomsday<div class="note">usual L2</div></div>
+  <button type="button" class="pill legion2" id="legion-83" onclick="toggleLegion(83)">L2</button>
+  <button type="button" class="pill out" id="status-83" onclick="toggleStatus(83)">OUT</button>
+</div>
+  </div>
+  <div class="actions">
+    <button class="btn" onclick="saveState()">Save</button>
+    <button class="btn primary" onclick="generateTeams()">Generate Assignments</button>
+  </div>
+</div>
+</section>
+
+<section id="resultsView" class="hidden">
+<div class="card">
+  <div class="actions">
+    <button class="btn" onclick="editSelection()">← Edit</button>
+    <button class="btn" onclick="generateTeams()">Regenerate</button>
+  </div>
+</div>
+<div id="teamGrid" class="teamgrid"></div>
+</section>
+</div>
+
+<script>
+var ROSTER=[{"id":1,"name":"AngryMarshmallow","rank":1,"bt":"BT2","defaultLegion":1},{"id":2,"name":"I am Kit","rank":2,"bt":"BT2","defaultLegion":1},{"id":3,"name":"Stefan","rank":3,"bt":"BT2","defaultLegion":1},{"id":4,"name":"Lucky Meow","rank":4,"bt":"BT2","defaultLegion":1},{"id":5,"name":"Bun","rank":5,"bt":"BT1","defaultLegion":2},{"id":6,"name":"Space_balls","rank":6,"bt":"BT1","defaultLegion":2},{"id":7,"name":"Jbsnow","rank":7,"bt":"BT1","defaultLegion":2},{"id":8,"name":"Rellik","rank":8,"bt":"BT2","defaultLegion":1},{"id":9,"name":"Hedder","rank":9,"bt":"BT1","defaultLegion":2},{"id":10,"name":"BuRyAbAy","rank":10,"bt":"BT2","defaultLegion":1},{"id":11,"name":"Ntina","rank":11,"bt":"BT1","defaultLegion":2},{"id":12,"name":"༺༽l3@ck༼༻","rank":12,"bt":"BT2","defaultLegion":1},{"id":13,"name":"Weak BRS","rank":13,"bt":"BT2","defaultLegion":1},{"id":14,"name":"Brother Yatty","rank":14,"bt":"BT1","defaultLegion":2},{"id":15,"name":"Summer","rank":15,"bt":"BT2","defaultLegion":1},{"id":16,"name":"Choppy","rank":16,"bt":"BT2","defaultLegion":1},{"id":17,"name":"Dr.cutyMomo","rank":17,"bt":"BT1","defaultLegion":2},{"id":18,"name":"Tara","rank":18,"bt":"BT1","defaultLegion":2},{"id":19,"name":"Eurokeith","rank":19,"bt":"BT2","defaultLegion":1},{"id":20,"name":"Uranos","rank":20,"bt":"BT2","defaultLegion":1},{"id":21,"name":"Yaya_Bings","rank":21,"bt":"BT1","defaultLegion":2},{"id":22,"name":"Kals Avarys","rank":22,"bt":"BT1","defaultLegion":2},{"id":23,"name":"Seal","rank":23,"bt":"BT1","defaultLegion":2},{"id":24,"name":"Soraa","rank":24,"bt":"BT2","defaultLegion":1},{"id":25,"name":"Rosie","rank":25,"bt":"BT1","defaultLegion":2},{"id":26,"name":"Fu2fa2","rank":26,"bt":"BT2","defaultLegion":1},{"id":27,"name":"Kidbull","rank":27,"bt":"BT2","defaultLegion":1},{"id":28,"name":"Lord McLord","rank":28,"bt":"BT1","defaultLegion":2},{"id":29,"name":"Kirov Airship (rooster)","rank":29,"bt":"BT1","defaultLegion":2},{"id":30,"name":"Jina","rank":30,"bt":"BT2","defaultLegion":1},{"id":31,"name":"Filip1031","rank":31,"bt":"BT2","defaultLegion":1},{"id":32,"name":"ReyGattuso","rank":32,"bt":"BT1","defaultLegion":2},{"id":33,"name":"SpikeCujo","rank":33,"bt":"BT1","defaultLegion":2},{"id":34,"name":"NicolePharmD","rank":34,"bt":"BT1","defaultLegion":2},{"id":35,"name":"Seren (edoardo Galan)","rank":35,"bt":"BT1","defaultLegion":2},{"id":36,"name":"Cat","rank":36,"bt":"BT1","defaultLegion":2},{"id":37,"name":"伦恩少侠911","rank":37,"bt":"BT2","defaultLegion":1},{"id":38,"name":"Floopy","rank":38,"bt":"BT2","defaultLegion":1},{"id":39,"name":"U roll my balls","rank":39,"bt":"BT1","defaultLegion":2},{"id":40,"name":"Lord Vegnagun","rank":40,"bt":"BT1","defaultLegion":2},{"id":41,"name":"# solo #","rank":41,"bt":"BT1","defaultLegion":2},{"id":42,"name":"SKY","rank":42,"bt":"BT1","defaultLegion":2},{"id":43,"name":"Tdvt25","rank":43,"bt":"BT1","defaultLegion":2},{"id":44,"name":"Youshe","rank":44,"bt":"BT1","defaultLegion":2},{"id":45,"name":"Lexie (Bearded Dragon)","rank":45,"bt":"BT2","defaultLegion":1},{"id":46,"name":"Ranji","rank":46,"bt":"BT1","defaultLegion":2},{"id":47,"name":"Ibra","rank":47,"bt":"BT2","defaultLegion":1},{"id":48,"name":"Ratchin","rank":48,"bt":"BT2","defaultLegion":1},{"id":49,"name":"Kuman","rank":49,"bt":"BT2","defaultLegion":1},{"id":50,"name":"累累~累累~","rank":50,"bt":"BT2","defaultLegion":1},{"id":51,"name":"Doom Balls","rank":51,"bt":"BT1","defaultLegion":2},{"id":52,"name":"AZOZKA","rank":52,"bt":"BT1","defaultLegion":2},{"id":53,"name":"Psycho","rank":53,"bt":"BT2","defaultLegion":1},{"id":54,"name":"Timmu","rank":54,"bt":"BT1","defaultLegion":2},{"id":55,"name":"Skadi B","rank":55,"bt":"BT1","defaultLegion":2},{"id":56,"name":"Harmony","rank":56,"bt":"BT2","defaultLegion":1},{"id":57,"name":"Atiba","rank":57,"bt":"BT1","defaultLegion":2},{"id":58,"name":"Shoushana","rank":58,"bt":"BT2","defaultLegion":1},{"id":59,"name":"Meli","rank":59,"bt":"BT2","defaultLegion":1},{"id":60,"name":"Biiiiiiiiing~O","rank":60,"bt":"BT1","defaultLegion":2},{"id":61,"name":"Nebulese","rank":61,"bt":"BT2","defaultLegion":1},{"id":62,"name":"Vulture","rank":62,"bt":"BT1","defaultLegion":2},{"id":63,"name":"SteelCityInsider","rank":63,"bt":"BT1","defaultLegion":2},{"id":64,"name":"Euphoria","rank":64,"bt":"BT2","defaultLegion":1},{"id":65,"name":"Durzu","rank":65,"bt":"BT1","defaultLegion":2},{"id":66,"name":"VKdViKing","rank":66,"bt":"BT1","defaultLegion":2},{"id":67,"name":"Bani Adam","rank":67,"bt":"BT2","defaultLegion":1},{"id":68,"name":"Wildkid","rank":68,"bt":"BT2","defaultLegion":1},{"id":69,"name":"Vrekmontt","rank":69,"bt":"BT1","defaultLegion":2},{"id":70,"name":"Melonlord","rank":70,"bt":"BT1","defaultLegion":2},{"id":71,"name":"Punni","rank":71,"bt":"BT2","defaultLegion":1},{"id":72,"name":"Gritsayenko","rank":72,"bt":"BT2","defaultLegion":1},{"id":73,"name":"Kayzersoze77","rank":73,"bt":"BT1","defaultLegion":2},{"id":74,"name":"Mana","rank":74,"bt":"BT2","defaultLegion":1},{"id":75,"name":"Crazy Slime","rank":75,"bt":"BT2","defaultLegion":1},{"id":76,"name":"Sukuna","rank":76,"bt":"BT2","defaultLegion":1},{"id":77,"name":"Shoretallsong","rank":77,"bt":"BT1","defaultLegion":2},{"id":78,"name":"RANGERS","rank":78,"bt":"BT2","defaultLegion":1},{"id":79,"name":"عيسى","rank":79,"bt":"BT2","defaultLegion":1},{"id":80,"name":"Noura","rank":80,"bt":"BT1","defaultLegion":2},{"id":81,"name":"FatCHUCK","rank":81,"bt":"BT1","defaultLegion":2},{"id":82,"name":"DonMeloooon","rank":82,"bt":"BT1","defaultLegion":2},{"id":83,"name":"Doomsday","rank":83,"bt":"BT1","defaultLegion":2}];
+var STATE={legion:1,status:{},override:{}};
+var SHOW_USUAL=false;
+var KEY='CAN_CANYON_DIRECT_V2';
+var PATTERN={A:[4,9,16,21,27],B:[3,10,15,22,28],C:[1,8,13,20,25],D:[2,7,14,19,26],E:[5,11,18,24,30],F:[6,12,17,23,29]};
+
+function byId(id){return document.getElementById(id)}
+function getPlayer(id){return ROSTER.find(function(p){return p.id===id})}
+function effLegion(p){return Number(STATE.override[p.id] || p.defaultLegion)}
+function getStatus(p){return STATE.status[p.id] || 'out'}
+
+function saveState(){
+  try{localStorage.setItem(KEY,JSON.stringify(STATE))}catch(e){}
+}
+
+function loadState(){
+  try{var raw=localStorage.getItem(KEY);if(raw)STATE=Object.assign(STATE,JSON.parse(raw))}catch(e){}
+}
+
+function renderRow(p){
+  var leg=effLegion(p), active=Number(STATE.legion), s=getStatus(p);
+  var lb=byId('legion-'+p.id), sb=byId('status-'+p.id), row=byId('player-'+p.id);
+  if(!lb||!sb||!row)return;
+  lb.textContent='L'+leg+(leg!==p.defaultLegion?'*':'');
+  lb.className='pill legion'+leg;
+  sb.textContent=s==='out'?'OUT':(s==='deployed'?'DEPLOYED':'SUB');
+  sb.className='pill '+(s==='out'?'out':(s==='deployed'?'deployed':'substatus'));
+  if(leg!==active){sb.classList.add('disabled')} else {sb.classList.remove('disabled')}
+}
+
+function renderAll(){
+  ROSTER.forEach(renderRow);
+  updateCounts();
+  filterRows();
+}
+
+function toggleStatus(id){
+  var p=getPlayer(id);
+  if(!p)return;
+  if(effLegion(p)!==Number(STATE.legion)){alert('Switch this player into Legion '+STATE.legion+' first.');return}
+  var s=getStatus(p);
+  STATE.status[p.id]=s==='out'?'deployed':(s==='deployed'?'sub':'out');
+  saveState();renderRow(p);updateCounts();
+}
+
+function toggleLegion(id){
+  var p=getPlayer(id);if(!p)return;
+  var newLeg=effLegion(p)===1?2:1;
+  STATE.override[p.id]=newLeg;
+  if(newLeg!==Number(STATE.legion))STATE.status[p.id]='out';
+  saveState();renderRow(p);updateCounts();filterRows();
+}
+
+function changeLegion(){
+  STATE.legion=Number(byId('activeLegion').value);
+  saveState();renderAll();
+}
+
+function toggleUsual(){
+  SHOW_USUAL=!SHOW_USUAL;
+  byId('usualBtn').textContent=SHOW_USUAL?'Show all players':'Show usual legion only';
+  filterRows();
+}
+
+function filterRows(){
+  var q=(byId('search').value||'').toLowerCase();
+  ROSTER.forEach(function(p){
+    var row=byId('player-'+p.id);
+    var show=(!q||p.name.toLowerCase().indexOf(q)!==-1) && (!SHOW_USUAL||p.defaultLegion===Number(STATE.legion));
+    row.style.display=show?'grid':'none';
+  });
+}
+
+function updateCounts(){
+  var active=Number(STATE.legion),dep=0,sub=0,out=0;
+  ROSTER.forEach(function(p){
+    if(effLegion(p)!==active)return;
+    var s=getStatus(p);
+    if(s==='deployed')dep++; else if(s==='sub')sub++; else out++;
+  });
+  byId('deployedCount').textContent=dep;
+  byId('subCount').textContent=sub;
+  byId('outCount').textContent=out;
+}
+
+function generateTeams(){
+  var active=Number(STATE.legion);
+  var deployed=ROSTER.filter(function(p){return effLegion(p)===active&&getStatus(p)==='deployed'}).sort(function(a,b){return a.rank-b.rank});
+  var subs=ROSTER.filter(function(p){return effLegion(p)===active&&getStatus(p)==='sub'}).sort(function(a,b){return a.rank-b.rank});
+  if(!deployed.length){alert('Select deployed players first.');return}
+  var ranked=deployed.map(function(p,i){return Object.assign({},p,{eventRank:i+1})});
+  var teams={A:[],B:[],C:[],D:[],E:[],F:[]};
+  Object.keys(PATTERN).forEach(function(t){
+    PATTERN[t].forEach(function(r){
+      var p=ranked.find(function(x){return x.eventRank===r});
+      if(p)teams[t].push(p);
+    })
+  });
+
+  // Preserve the exact A–F pattern for relative Gaia ranks 1–30.
+  // Any additional deployed players (31+) are distributed evenly across A–F.
+  ranked.filter(function(p){return p.eventRank>30}).forEach(function(p){
+    var letters=['A','B','C','D','E','F'];
+    var target=letters[0];
+    letters.forEach(function(t){
+      if(teams[t].length<teams[target].length)target=t;
+    });
+    teams[target].push(p);
+  });
+
+  var subTeams={A:[],B:[],C:[],D:[],E:[],F:[]};
+  var letters=['A','B','C','D','E','F'];
+  subs.forEach(function(p,i){subTeams[letters[i%6]].push(p)});
+
+  var grid=byId('teamGrid');grid.innerHTML='';
+  letters.forEach(function(t){
+    var members=teams[t];
+    var cap=null;
+    if(members.length)cap=members.slice().sort(function(a,b){return a.eventRank-b.eventRank})[0].id;
+    var d=document.createElement('div');d.className='team';
+    var html='<div class="teamhead">TEAM '+t+'</div>';
+    members.forEach(function(p){html+='<div class="member"><span>'+p.name+'</span><span class="role">'+(p.id===cap?'★ CAPTAIN':'')+'</span></div>'});
+    subTeams[t].forEach(function(p){html+='<div class="subbox">SUB: '+p.name+'</div>'});
+    d.innerHTML=html;grid.appendChild(d);
+  });
+  byId('selectView').classList.add('hidden');
+  byId('resultsView').classList.remove('hidden');
+}
+
+function editSelection(){
+  byId('resultsView').classList.add('hidden');
+  byId('selectView').classList.remove('hidden');
+}
+
+loadState();
+STATE.legion=Number(STATE.legion)||1;
+byId('activeLegion').value=String(STATE.legion);
+renderAll();
+</script>
+</body>
+</html>
